@@ -118,7 +118,7 @@ def print_model_parm_flops(model, input):
             foo(c)
 
     foo(model)
-    out = model(input)
+    _ = model(input)
 
     total_flops = (sum(list_conv) + sum(list_linear) + sum(list_bn) + sum(list_relu) + sum(list_pooling))
 
@@ -145,7 +145,7 @@ def print_forward(model, input):
 
     select_layer.register_forward_hook(save_grad('select_layer'))
 
-    out = model(input)
+    _ = model(input)
     # print grads['select_layer']
     print(grads)
 
@@ -251,21 +251,21 @@ def show_summary(model, input):
     def torch_summarize_df(x, model, weights=False, input_shape=True, nb_trainable=False):
         """
         Summarizes torch model by showing trainable parameters and weights.
-        
+
         author: wassname
         url: https://gist.github.com/wassname/0fb8f95e4272e6bdd27bd7df386716b7
         license: MIT
-        
+
         Modified from:
         - https://github.com/pytorch/pytorch/issues/2001#issuecomment-313735757
         - https://gist.github.com/wassname/0fb8f95e4272e6bdd27bd7df386716b7/
-        
+
         Usage:
             import torchvision.models as models
             model = models.alexnet()
             df = torch_summarize_df(input_size=(3, 224,224), model=model)
             print(df)
-            
+
             #              name class_name        input_shape       output_shape  nb_params
             # 1     features=>0     Conv2d  (-1, 3, 224, 224)   (-1, 64, 55, 55)      23296#(3*11*11+1)*64
             # 2     features=>1       ReLU   (-1, 64, 55, 55)   (-1, 64, 55, 55)          0
@@ -377,7 +377,7 @@ def show_save_tensor():
         elif c != 3:
             tensor = tensor[:, ch, :, :].unsqueeze(dim=1)
 
-        rows = np.min((tensor.shape[0] // nrow + 1, 64))
+        rows = np.min((tensor.shape[0] // nrow + 1, 64))  # noqa
         grid = utils.make_grid(tensor, nrow=nrow, normalize=True, padding=padding)
         # plt.figure(figsize=(nrow,rows))
         plt.imshow(grid.numpy().transpose((1, 2, 0)))  # CHW HWC
@@ -392,7 +392,7 @@ def show_save_tensor():
 
     vgg = models.resnet18(pretrained=True)
     mm = vgg.double()
-    filters = mm.modules
+    filters = mm.modules  # noqa
     body_model = [i for i in mm.children()][0]
     # layer1 = body_model[0]
     layer1 = body_model

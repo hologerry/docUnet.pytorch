@@ -4,7 +4,7 @@
 import torch
 import torch.utils.data as Data
 from torchvision import transforms
-from MyDataSet import ImageData
+from dataset import ImageData
 from models.deeplab_models.deeplab import DeepLab  # 一个deeplab v3+网络
 import time
 import config
@@ -14,6 +14,7 @@ import os
 import shutil
 
 torch.backends.cudnn.benchmark = True
+
 
 def setup_logger(log_file_path: str = None):
     import logging

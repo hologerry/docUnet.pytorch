@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2018/6/20 16:12
 # @Author  : zhoujun
+import os
 import numpy as np
 import time
-from ctypes import *
+from ctypes import cdll, c_float, c_int, c_char_p
 import multiprocessing as mp
 import tqdm
 import shutil
 import numpy.ctypeslib as npct
-from utils.utils import *
+from utils.utils import get_input_list, get_input_output_list
 import argparse
 
 array_2d_float = npct.ndpointer(np.float32, ndim=2, flags='C_CONTIGUOUS')
@@ -59,7 +60,7 @@ def add_background(img_path, background_path, save_path, i):
         map_rows = np.ones((new_row, new_col), dtype=np.float32)
         # 列方向的映射矩阵, 和, vec_rows结合使用,
         # vec_rows[x] = x1, vec_rows[y] = y1
-        #表示扫描图上(x, y)处的点在扭曲图上(x1, y1)处取值
+        # 表示扫描图上(x, y)处的点在扭曲图上(x1, y1)处取值
         map_clos = np.ones((new_row, new_col), dtype=np.float32)
         np.random.seed(i)
         kernel = 9
@@ -80,11 +81,13 @@ def add_background_all(Flags):
     # print(time.time() - start)
 
     input_file_folder = Flags.scan_images_path
-    output_file_folder = Flags.background_images_path
-    bg_dir = Flags.output_path
-    all_num =  Flags.num
+    output_file_folder = Flags.output_path
+    bg_dir = Flags.background_images_path
+    print(bg_dir)
+    all_num = Flags.num
 
-    g = get_input_output_list(input_file_folder, output_file_folder, ['.jpg', '.png'], '.jpg',save_to_same_folder=False)
+    g = get_input_output_list(input_file_folder, output_file_folder, [
+                              '.jpg', '.png'], '.jpg', save_to_same_folder=False)
 
     bg_list = list(get_input_list(bg_dir, ['.jpg', '.png']))
 
@@ -149,15 +152,14 @@ def remove_img_all():
     # save_path = r'D:\work\data\clip_black1\0\0_1.jpg'
     # remove_img(img_path.encode(), save_path.encode())
     # return
-    input_file_folder = '/data1/zj/data/remove_img1'
-    output_file_folder = '/data1/zj/data/remove_img2'
-    input_list, output_list = get_input_output_list(
-        input_file_folder, output_file_folder, ['.jpg', '.png'], '.jpg')
+    input_file_folder = 'remove_img1'
+    output_file_folder = 'remove_img2'
+    input_list, output_list = get_input_output_list(input_file_folder, output_file_folder, ['.jpg', '.png'], '.jpg')
     assert len(input_list) == len(output_list)
     print('img numbers is ', len(input_list))
 
     pool = mp.Pool(mp.cpu_count() - 1)
-    result = []
+    # result = []
     print('start at', time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     start = time.time()
     pbar = tqdm.tqdm(total=len(input_list))
@@ -181,17 +183,17 @@ def remove_img_all():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--scan_images_path', type=str, default='',required=True,
+    parser.add_argument('-i', '--scan_images_path', type=str, default='', required=True,
                         help='the path of scan images')
     parser.add_argument('-b', '--background_images_path', type=str, default='', required=True,
                         help='the path of background images')
     parser.add_argument('-o', '--output_path', type=str, default='', required=True,
                         help='the path of output')
-    parser.add_argument('-n', '--num', type=int, default=100000, required=True,
+    parser.add_argument('-n', '--num', type=int, default=712, required=False,
                         help='the number of generat images')
     Flags, _ = parser.parse_known_args()
 
-    dll = npct.load_library("data_generator/cpp/add_background/build/libadd_background.so")
+    dll = npct.load_library("libadd_background.so", "data_generator/cpp/add_background/build/")
     dll.generate_one_img_py.restype = c_int
     dll.generate_one_img_py.argtypes = [c_char_p, c_char_p, c_char_p, c_int, c_int, array_2d_float, array_2d_float,
                                         c_int, c_int, c_int]

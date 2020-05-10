@@ -2,7 +2,7 @@
 # @Time    : 18-11-27 下午1:11
 # @Author  : zhoujun
 
-trainroot='/data2/zj/data/add_bg_img_800_600'
+trainroot = '/root/doc_unet_dataset/data_gen/'
 output_dir = 'output/deeplab_add_bg_img_800_600_item_origin_deeplab_drn'
 
 gpu_id = 2

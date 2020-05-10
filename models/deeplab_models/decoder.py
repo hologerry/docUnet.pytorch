@@ -32,7 +32,7 @@ class Decoder(nn.Module):
             self.deconv = nn.Sequential(nn.ConvTranspose2d(256, 256, 3, stride=2, padding=1, output_padding=1),)
         else:
             self.deconv = nn.Sequential(nn.ConvTranspose2d(256, 256, 3, stride=2, padding=1, output_padding=(0,1)),
-                                    nn.ConvTranspose2d(256, 256, 3, stride=2, padding=1, output_padding=1))
+                                        nn.ConvTranspose2d(256, 256, 3, stride=2, padding=1, output_padding=1))
         self._init_weight()
 
     def forward(self, x, low_level_feat):

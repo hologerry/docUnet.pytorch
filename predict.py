@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 # @Time    : 18-7-5 上午9:20
 # @Author  : zhoujun
-import torch
-from torchvision import transforms
 import os
-import matplotlib.pyplot as plt
-import cv2
 import time
-from PIL import Image
+
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from natsort import natsorted
+from PIL import Image
+from torchvision import transforms
 
 
 def get_file_list(folder_path: str, p_postfix: str or list = ['.jpg'], sub_dir: bool = True) -> list:

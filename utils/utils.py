@@ -5,6 +5,7 @@ import os
 import pathlib
 import cv2
 
+
 def get_input_output_list(input_file_folder, output_file_folder, p_postfix=['.xml'], l_postfix='.txt',
                           save_to_same_folder=False):
     '''
@@ -47,6 +48,7 @@ def get_input_output_list(input_file_folder, output_file_folder, p_postfix=['.xm
                     print('makedir:%s', save_file.parent)
                 yield input_path, save_file
 
+
 def get_input_list(input_file_folder, p_postfix=['.xml']):
     '''
     根据输入的路径是文件还是文件夹来产生输入和输出文件地址列表
@@ -65,6 +67,7 @@ def get_input_list(input_file_folder, p_postfix=['.xml']):
         for input_g in input_g_list:
             for input_path in input_g:
                 yield input_path
+
 
 def rebuild(warp_img, mapx, mapy):
     return cv2.remap(warp_img, mapx, mapy, cv2.INTER_LINEAR)
