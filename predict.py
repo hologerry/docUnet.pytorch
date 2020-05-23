@@ -147,15 +147,15 @@ class Pytorch_model:
 if __name__ == '__main__':
     from models.deeplab_models.deeplab import DeepLab
 
-    model_path = 'output/deeplab_add_bg_img_800_600_item_origin_deeplab_resnet/DocUnet_77_0.41399721733152867.pth'
+    model_path = 'output/deeplab_add_bg_img_800_600_item_origin_deeplab_drn/DocUnet_80_39.44407685954919.pth'
 
     # model_path = './output/model.pkl'
     # img_path = '/data2/zj/data/add_bg_img_800_600/item1/0_0.jpg'
-    img_path = '/data2/zj/data/doc_testdata/5.jpg'
+    # img_path = '/root/single'
     # 初始化网络
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=2, pretrained=False)
     model = Pytorch_model(model_path, net=net, img_h=600, img_w=800, img_channel=3, gpu_id=2)
-    for img_path in get_file_list('/data2/zj/data/doc_testdata', p_postfix='.jpg'):
+    for img_path in get_file_list('/root/single', p_postfix='.jpg'):
         if img_path.__contains__('result'):
             continue
         start = time.time()
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         # 可视化
         save_path = os.path.splitext(img_path)[0]
         print(save_path)
-        cv2.imwrite(save_path + '_epoch_77_result.jpg', unwarp_img)
+        cv2.imwrite(save_path + '_epoch_80_result.jpg', unwarp_img)
         plt.subplot(1, 2, 1)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         plt.title('input')
@@ -174,5 +174,5 @@ if __name__ == '__main__':
         unwarp_img = cv2.cvtColor(unwarp_img, cv2.COLOR_BGR2RGB)
         plt.title('output')
         plt.imshow(unwarp_img)
-        # plt.savefig(save_path + '_plt_result.jpg', dpi=600)
-        plt.show()
+        plt.savefig(save_path + '_plt_result.jpg', dpi=600)
+        # plt.show()

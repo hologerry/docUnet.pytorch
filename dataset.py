@@ -104,11 +104,9 @@ class ImageData(Data.Dataset):
 
 
 if __name__ == '__main__':
-    img_path = 'Z:/zj/data/add_bg_img_2000_1180_nnn'
-    test_data = ImageData(
-        img_path, transform=transforms.ToTensor(), t_transform=transforms.ToTensor())
-    test_loader = Data.DataLoader(
-        dataset=test_data, batch_size=1, shuffle=True, num_workers=3)
+    img_path = 'data/add_bg_img_2000_1180_nnn'
+    test_data = ImageData(img_path, transform=transforms.ToTensor(), t_transform=transforms.ToTensor())
+    test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=True, num_workers=3)
     import torch
     loss_fn = torch.nn.MSELoss()
     for img, label in test_loader:

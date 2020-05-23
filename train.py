@@ -5,13 +5,14 @@ import torch
 import torch.utils.data as Data
 from torchvision import transforms
 from dataset import ImageData
-from models.deeplab_models.deeplab import DeepLab  # 一个deeplab v3+网络
+# from models.deeplab_models.deeplab import DeepLab  # 一个deeplab v3+网络
+from models.doc_unet.model import Doc_UNet
 import time
 import config
 from tensorboardX import SummaryWriter
 from loss import DocUnetLoss_DL_batch as DocUnetLoss
 import os
-import shutil
+# import shutil
 
 torch.backends.cudnn.benchmark = True
 
@@ -42,6 +43,7 @@ def setup_logger(log_file_path: str = None):
     logger.info('logger init finished')
     return logger
 
+
 def save_checkpoint(checkpoint_path, model, optimizer, epoch):
     state = {'state_dict': model.state_dict(),
              'optimizer': optimizer.state_dict(),
@@ -63,8 +65,8 @@ def train():
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config.gpu_id)
     if config.output_dir is None:
         config.output_dir = 'output'
-    if config.restart_training:
-        shutil.rmtree(config.output_dir, ignore_errors=True)
+    # if config.restart_training:
+    #     shutil.rmtree(config.output_dir, ignore_errors=True)
     if not os.path.exists(config.output_dir):
         os.mkdir(config.output_dir)
 
@@ -82,11 +84,11 @@ def train():
 
     train_data = ImageData(config.trainroot, transform=transforms.ToTensor(), t_transform=transforms.ToTensor())
     train_loader = Data.DataLoader(dataset=train_data, batch_size=config.train_batch_size, shuffle=False,
-                                   num_workers=int(config.workers))
+                                   num_workers=int(config.workers), drop_last=True)
 
     writer = SummaryWriter(config.output_dir)
-    # net = Doc_UNet(n_channels=3, n_classes=2)
-    net = DeepLab(backbone='resnet', output_stride=16, num_classes=2, pretrained=True)
+    net = Doc_UNet(input_channels=3, n_classes=2)
+    # net = DeepLab(backbone='resnet', output_stride=16, num_classes=2, pretrained=True)
     # net = drn_c_58(BatchNorm=torch.nn.BatchNorm2d, num_classes=2, pretrained=True)
     net = net.to(device)
     # dummy_input = torch.autograd.Variable(torch.Tensor(1, 3, 600, 800).to(device))
@@ -97,7 +99,7 @@ def train():
     if config.checkpoint != '' and not config.restart_training:
         # net.load_state_dict(torch.load(opt.model, map_location=lambda storage, loc: storage.cuda(0)))
         start_epoch = load_checkpoint(config.checkpoint, net, optimizer)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config.lr_decay_step, gamma=config.lr_decay,last_epoch=start_epoch)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config.lr_decay_step, gamma=config.lr_decay, last_epoch=start_epoch)
     else:
         start_epoch = config.start_epoch
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config.lr_decay_step, gamma=config.lr_decay)

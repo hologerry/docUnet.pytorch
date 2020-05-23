@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2018/6/11 10:34
 # @Author  : zhoujun
-
-from models.doc_unet.unet_parts import *
+import torch
+from torch import nn
+from models.doc_unet.unet_parts import inconv, down, up, outconv
 
 
 class UNet(nn.Module):
@@ -55,7 +56,7 @@ class Doc_UNet(nn.Module):
         self.U_net2 = UNet(64 + n_classes, n_classes, need_feature_maps=False)
 
     def forward(self, x):
-        y1,feature_maps = self.U_net1(x)
+        y1, feature_maps = self.U_net1(x)
         x = torch.cat((feature_maps, y1), dim=1)
         # print("x:",x.shape)
         # print("y1:",y1.shape)
