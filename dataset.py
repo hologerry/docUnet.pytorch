@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2018/6/13 15:01
 # @Author  : zhoujun
+import collections
 import os
 import pathlib
 
 import cv2
+import hdf5storage as h5
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 import torch.utils.data as Data
-from torchvision import transforms
-
 from natsort import natsorted
+from PIL import Image
+from torchvision import transforms
 
 
 def get_file_list(folder_path: str, p_postfix: str or list = ['.jpg'], sub_dir: bool = True) -> list:
@@ -102,12 +105,66 @@ class ImageData(Data.Dataset):
     def __len__(self):
         return len(self.image_path)
 
+class Doc3dDataset(Data.Dataset):
+    """
+    Dataset for RGB Image -> Backward Mapping.
+    """
+
+    def __init__(self, root, split='train', is_transform=True,
+                 img_size=448, augmentations=None):
+        self.root = root
+        self.split = split
+        self.is_transform = is_transform
+        self.augmentations = augmentations
+        self.n_classes = 2  # target number of channel
+        self.files = collections.defaultdict(list)
+        self.img_size = img_size if isinstance(img_size, tuple) else (img_size, img_size)
+
+        for split in ['train', 'val']:
+            path = os.path.join(self.root, split + '.txt')
+            file_list = tuple(open(path, 'r'))
+            file_list = [id_.rstrip() for id_ in file_list]
+            self.files[split] = file_list
+
+    def __len__(self):
+        return len(self.files[self.split])
+
+    def __getitem__(self, index):
+        # 1/824_8-cp_Page_0503-7Nw0001
+        im_name = self.files[self.split][index]
+
+        im_path = os.path.join(self.root, 'img', im_name + '.png')
+        im = Image.open(im_path).convert('RGB')
+
+        bm_path = os.path.join(self.root, 'bm', im_name + '.mat')
+        bm = h5.loadmat(bm_path)['bm']
+
+        if self.is_transform:
+            image, label = self.transform(im, bm)
+        return image, label
+
+    def transform(self, img, bm, chk=None):
+        img = img.resize(self.img_size)
+
+        bm = bm.astype(float)
+        bm = bm / np.array([448.0, 448.0])
+        bm = (bm - 0.5) * 2
+        bm0 = cv2.resize(bm[:, :, 0], (self.img_size[0], self.img_size[1]))
+        bm1 = cv2.resize(bm[:, :, 1], (self.img_size[0], self.img_size[1]))
+
+        label = np.stack([bm0, bm1], axis=0)
+
+        # to torch
+        image = transforms.ToTensor()(img)
+        label = torch.from_numpy(label).float()  # NCHW
+
+        return image, label
+
 
 if __name__ == '__main__':
     img_path = 'data/add_bg_img_2000_1180_nnn'
     test_data = ImageData(img_path, transform=transforms.ToTensor(), t_transform=transforms.ToTensor())
     test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=True, num_workers=3)
-    import torch
     loss_fn = torch.nn.MSELoss()
     for img, label in test_loader:
         #     print(img[0].permute(1,2,0).numpy().shape)

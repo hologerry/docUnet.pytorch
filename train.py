@@ -1,25 +1,29 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2018/6/11 15:54
 # @Author  : zhoujun
+# import shutil
+import logging
+import os
+
+import time
+
 import torch
 import torch.utils.data as Data
-from torchvision import transforms
-from dataset import ImageData
-# from models.deeplab_models.deeplab import DeepLab  # 一个deeplab v3+网络
-from models.doc_unet.model import Doc_UNet
-import time
-import config
+from colorlog import ColoredFormatter
 from tensorboardX import SummaryWriter
+# from torchvision import transforms
+import config
+
+# from dataset import ImageData
+from dataset import Doc3dDataset
 from loss import DocUnetLoss_DL_batch as DocUnetLoss
-import os
-# import shutil
+from models.deeplab_models.deeplab import DeepLab  # 一个deeplab v3+网络
+# from models.doc_unet.model import Doc_UNet
 
 torch.backends.cudnn.benchmark = True
 
 
 def setup_logger(log_file_path: str = None):
-    import logging
-    from colorlog import ColoredFormatter
     logging.basicConfig(filename=log_file_path, format='%(asctime)s %(levelname)-8s %(filename)s: %(message)s',
                         # 定义输出log的格式
                         datefmt='%Y-%m-%d %H:%M:%S', )
@@ -45,7 +49,7 @@ def setup_logger(log_file_path: str = None):
 
 
 def save_checkpoint(checkpoint_path, model, optimizer, epoch):
-    state = {'state_dict': model.state_dict(),
+    state = {'state_dict': model.module.state_dict(),
              'optimizer': optimizer.state_dict(),
              'epoch': epoch}
     torch.save(state, checkpoint_path)
@@ -62,13 +66,13 @@ def load_checkpoint(checkpoint_path, model, optimizer):
 
 
 def train():
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(config.gpu_id)
+    # os.environ['CUDA_VISIBLE_DEVICES'] = str(config.gpu_id)
     if config.output_dir is None:
         config.output_dir = 'output'
     # if config.restart_training:
     #     shutil.rmtree(config.output_dir, ignore_errors=True)
     if not os.path.exists(config.output_dir):
-        os.mkdir(config.output_dir)
+        os.makedirs(config.output_dir)
 
     logger = setup_logger(os.path.join(config.output_dir, 'train_log'))
 
@@ -82,16 +86,18 @@ def train():
         logger.info('train with cpu and pytorch {}'.format(torch.__version__))
         device = torch.device("cpu")
 
-    train_data = ImageData(config.trainroot, transform=transforms.ToTensor(), t_transform=transforms.ToTensor())
+    # train_data = ImageData(config.trainroot, transform=transforms.ToTensor(), t_transform=transforms.ToTensor())
+    train_data = Doc3dDataset(config.trainroot)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=config.train_batch_size, shuffle=False,
                                    num_workers=int(config.workers), drop_last=True)
 
     writer = SummaryWriter(config.output_dir)
-    net = Doc_UNet(input_channels=3, n_classes=2)
-    # net = DeepLab(backbone='resnet', output_stride=16, num_classes=2, pretrained=True)
+    # net = Doc_UNet(input_channels=3, n_classes=2)
+    net = DeepLab(backbone='resnet', output_stride=16, num_classes=2, pretrained=True)
     # net = drn_c_58(BatchNorm=torch.nn.BatchNorm2d, num_classes=2, pretrained=True)
+    net = torch.nn.DataParallel(net)
     net = net.to(device)
-    # dummy_input = torch.autograd.Variable(torch.Tensor(1, 3, 600, 800).to(device))
+    # dummy_input = torch.randn(1, 3, 600, 800).to(device)
     # writer.add_graph(model=net, input_to_model=dummy_input)
 
     criterion = DocUnetLoss(reduction='mean')

@@ -2,15 +2,15 @@
 # @Time    : 18-11-27 下午1:11
 # @Author  : zhoujun
 
-trainroot = '/root/doc_unet_dataset/data_gen/'
-output_dir = 'output/docunet_add_bg_img_800_600_item_origin_docunet'
+trainroot = '/root/doc3d/'
+output_dir = 'output/doc3d_data_deeplab'
 
 gpu_id = 0
 workers = 6
 start_epoch = 0
 epochs = 500
 
-train_batch_size = 3
+train_batch_size = 16
 back_step = 10
 
 lr = 1e-4
