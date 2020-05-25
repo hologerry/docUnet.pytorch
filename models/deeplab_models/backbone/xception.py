@@ -109,7 +109,6 @@ class AlignedXception(nn.Module):
         else:
             raise NotImplementedError
 
-
         # Entry flow
         self.conv1 = nn.Conv2d(3, 32, 3, stride=2, padding=1, bias=False)
         self.bn1 = BatchNorm(32)
@@ -242,7 +241,6 @@ class AlignedXception(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-
     def _load_pretrained_model(self):
         pretrain_dict = model_zoo.load_url('http://data.lip6.fr/cadene/pretrainedmodels/xception-b5690688.pth')
         model_dict = {}
@@ -275,7 +273,6 @@ class AlignedXception(nn.Module):
                     model_dict[k] = v
         state_dict.update(model_dict)
         self.load_state_dict(state_dict)
-
 
 
 if __name__ == "__main__":

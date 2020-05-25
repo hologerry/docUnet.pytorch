@@ -16,7 +16,7 @@ class DeepLab(nn.Module):
         if backbone == 'drn':
             output_stride = 8
 
-        if sync_bn == True:
+        if sync_bn:
             BatchNorm = SynchronizedBatchNorm2d
         else:
             BatchNorm = nn.BatchNorm2d
@@ -65,6 +65,7 @@ class DeepLab(nn.Module):
                     for p in m[1].parameters():
                         if p.requires_grad:
                             yield p
+
 
 if __name__ == "__main__":
     model = DeepLab(backbone='mobilenet', output_stride=16, num_classes=2, pretrained=False)
