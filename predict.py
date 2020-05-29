@@ -5,12 +5,34 @@ import os
 import time
 
 import cv2
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from natsort import natsorted
 from PIL import Image
 from torchvision import transforms
+import torch.nn.functional as F
+
+def unwarp(img, bm):
+    w, h = img.shape[0], img.shape[1]
+    bm = bm.transpose(1, 2).transpose(2, 3).detach().cpu().numpy()[0, :, :, :]
+    bm0 = cv2.blur(bm[:, :, 0], (25, 25))
+    bm1 = cv2.blur(bm[:, :, 1], (25, 25))
+    bm0 = cv2.resize(bm0, (h, w))
+    bm1 = cv2.resize(bm1, (h, w))
+    bm = np.stack([bm0, bm1], axis=-1)
+    bm = np.expand_dims(bm, 0)
+    bm = torch.from_numpy(bm).double()
+
+    img = img.astype(float) / 255.0
+    img = img.transpose((2, 0, 1))
+    img = np.expand_dims(img, 0)
+    img = torch.from_numpy(img).double()
+
+    res = F.grid_sample(input=img, grid=bm)
+    res = res[0].numpy().transpose((1, 2, 0))
+
+    return res
 
 
 def get_file_list(folder_path: str, p_postfix: str or list = ['.jpg'], sub_dir: bool = True) -> list:
@@ -104,10 +126,11 @@ class Pytorch_model:
         tensor = tensor.to(self.device)
         preds = self.net(tensor)
         # print(preds)
-        preds = preds[0].permute(1, 2, 0).detach().cpu().numpy()
-        img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-        unwarp_img = cv2.remap(img, preds[:, :, 0], preds[:, :, 1], cv2.INTER_LINEAR)
+        # preds = preds[0].permute(1, 2, 0).detach().cpu().numpy()
+        # img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+        # unwarp_img = cv2.remap(img, preds[:, :, 0], preds[:, :, 1], cv2.INTER_LINEAR)
         # unwarp_img = cv2.resize(unwarp_img,(w,h))
+        unwarp_img = unwarp(img, preds)
         return unwarp_img
 
     def predict_cv(self, img: np.ndarray or str):
@@ -117,45 +140,54 @@ class Pytorch_model:
         :param is_numpy:
         :return:
         '''
-        assert self.img_channel in [1, 3], 'img_channel must in [1.3]'
+        # assert self.img_channel in [1, 3], 'img_channel must in [1.3]'
 
-        if isinstance(img, str):  # read image
-            assert os.path.exists(img), 'file is not exists'
-            img = cv2.imread(img, 0 if self.img_channel == 1 else 1)
+        # if isinstance(img, str):  # read image
+        #     assert os.path.exists(img), 'file is not exists'
+        #     img = cv2.imread(img, 0 if self.img_channel == 1 else 1)
 
-        if len(img.shape) == 2 and self.img_channel == 3:
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        elif len(img.shape) == 3 and self.img_channel == 1:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # if len(img.shape) == 2 and self.img_channel == 3:
+        #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        # elif len(img.shape) == 3 and self.img_channel == 1:
+        #     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        imgorg = cv2.imread(img)
+        imgorg = cv2.cvtColor(imgorg, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(imgorg, (self.img_w, self.img_h))
+        # img = img[:, :, ::-1]
+        img = img.astype(float) / 255.0
+        img = img.transpose(2, 0, 1)  # NHWC -> NCHW
+        img = np.expand_dims(img, 0)
+        tensor = torch.from_numpy(img).float()
         h, w = img.shape[:2]
         # img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-        t_img = cv2.resize(img, (self.img_w, self.img_h))
-        print(t_img.shape)
+        # t_img = cv2.resize(img, (self.img_w, self.img_h))
+        # print(t_img.shape)
         # 将图片由(w,h)变为(1,img_channel,h,w)
-        tensor = transforms.ToTensor()(t_img)
-        tensor = tensor.unsqueeze_(0)
+        # tensor = transforms.ToTensor()(t_img)
+        # tensor = tensor.unsqueeze_(0)
 
         tensor = tensor.to(self.device)
         preds = self.net(tensor)
         # print(preds)
-        preds = preds[0].permute(1, 2, 0).detach().cpu().numpy()
-        unwarp_img = cv2.remap(t_img, preds[:, :, 0], preds[:, :, 1], cv2.INTER_LINEAR)
-        unwarp_img = cv2.resize(unwarp_img, (w, h))
-        return unwarp_img, img
+        # preds = preds[0].permute(1, 2, 0).detach().cpu().numpy()
+        # unwarp_img = cv2.remap(t_img, preds[:, :, 0], preds[:, :, 1], cv2.INTER_LINEAR)
+        # unwarp_img = cv2.resize(unwarp_img, (w, h))
+        unwarp_img = unwarp(imgorg, preds)
+        return unwarp_img, imgorg
 
 
 if __name__ == '__main__':
     from models.deeplab_models.deeplab import DeepLab
 
-    model_path = 'output/deeplab_add_bg_img_800_600_item_origin_deeplab_drn/DocUnet_80_39.44407685954919.pth'
+    model_path = 'output/doc3d_data_deeplab/DocUnet_21_0.012450308240755322.pth'
 
     # model_path = './output/model.pkl'
     # img_path = '/data2/zj/data/add_bg_img_800_600/item1/0_0.jpg'
     # img_path = '/root/single'
     # 初始化网络
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=2, pretrained=False)
-    model = Pytorch_model(model_path, net=net, img_h=600, img_w=800, img_channel=3, gpu_id=2)
-    for img_path in get_file_list('/root/single', p_postfix='.jpg'):
+    model = Pytorch_model(model_path, net=net, img_h=448, img_w=448, img_channel=3, gpu_id=2)
+    for img_path in get_file_list('eval/input', p_postfix='.*'):
         if img_path.__contains__('result'):
             continue
         start = time.time()
@@ -163,16 +195,16 @@ if __name__ == '__main__':
         print(time.time() - start)
         # 执行预测
         # 可视化
-        save_path = os.path.splitext(img_path)[0]
+        save_path = os.path.splitext(img_path)[0].replace('input', 'unwarp')
         print(save_path)
-        cv2.imwrite(save_path + '_epoch_80_result.jpg', unwarp_img)
-        plt.subplot(1, 2, 1)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        plt.title('input')
-        plt.imshow(img)
-        plt.subplot(1, 2, 2)
-        unwarp_img = cv2.cvtColor(unwarp_img, cv2.COLOR_BGR2RGB)
-        plt.title('output')
-        plt.imshow(unwarp_img)
-        plt.savefig(save_path + '_plt_result.jpg', dpi=600)
-        # plt.show()
+        cv2.imwrite(save_path + '_epoch_21_result.jpg', unwarp_img[:, :, ::-1]*255)
+        # plt.subplot(1, 2, 1)
+        # # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # plt.title('input')
+        # plt.imshow(img)
+        # plt.subplot(1, 2, 2)
+        # # unwarp_img = cv2.cvtColor(unwarp_img, cv2.COLOR_BGR2RGB)
+        # plt.title('output')
+        # plt.imshow(unwarp_img[:, :, ::-1]*255)
+        # plt.savefig(save_path + '_plt_result.jpg', dpi=600)
+        # # plt.show()

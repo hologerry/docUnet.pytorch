@@ -16,7 +16,7 @@ import config
 
 # from dataset import ImageData
 from dataset import Doc3dDataset
-from loss import DocUnetLoss_DL_batch as DocUnetLoss
+from loss import DocUnetLoss_DL as DocUnetLoss
 from models.deeplab_models.deeplab import DeepLab  # 一个deeplab v3+网络
 # from models.doc_unet.model import Doc_UNet
 
@@ -100,7 +100,7 @@ def train():
     # dummy_input = torch.randn(1, 3, 600, 800).to(device)
     # writer.add_graph(model=net, input_to_model=dummy_input)
 
-    criterion = DocUnetLoss(reduction='mean')
+    criterion = DocUnetLoss().to(device)
     optimizer = torch.optim.SGD(net.parameters(), lr=config.lr)
     if config.checkpoint != '' and not config.restart_training:
         # net.load_state_dict(torch.load(opt.model, map_location=lambda storage, loc: storage.cuda(0)))
@@ -117,7 +117,6 @@ def train():
             net.train()
             train_loss = 0.
             start = time.time()
-            scheduler.step()
             for i, (images, labels) in enumerate(train_loader):
                 # if float(scheduler.get_lr()[0]) > opt.end_learning_rate:
                 #     scheduler.step()
@@ -142,6 +141,8 @@ def train():
                         epoch + 1, config.epochs, (i + 1), all_step, loss.item() / config.train_batch_size, batch_time,
                         str(scheduler.get_lr()[0])))
                     start = time.time()
+
+            scheduler.step()
 
             logger.info('[%d/%d], train_loss: %.4f, time:%0.4f, lr:%s' % (
                 epoch + 1, config.epochs, train_loss / train_data.__len__(), time.time() - start,

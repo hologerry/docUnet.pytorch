@@ -3,7 +3,7 @@
 # @Author  : zhoujun
 
 trainroot = '/root/doc3d/'
-output_dir = 'output/doc3d_data_deeplab'
+output_dir = 'output/doc3d_data_deeplab_different_docunetloss'
 
 gpu_id = 0
 workers = 6
